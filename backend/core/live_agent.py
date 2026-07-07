@@ -177,11 +177,14 @@ class LiveAgentSession:
             {state["dom"]}
             
             Based on the screenshot and DOM, determine the SINGLE NEXT LOGICAL STEP to progress towards the goal.
-            - If you need to click, use action_type="click" and selector="[jigar-id='...']" or selector="#..."
-            - If you need to type, use action_type="type", provide selector, and value.
-            - If you need to navigate, use action_type="goto" and provide value (the URL).
-            - If the instruction is complex, you can check available workflows on this domain using action_type="check_workflows".
-            - If you found a matching workflow, execute it using action_type="run_workflow" and provide workflow_id.
+            
+            CRITICAL INSTRUCTIONS:
+            - If the user's instruction is complex or a multi-step task, you MUST check if a workflow exists to automate it by using action_type="check_workflows". This saves API calls!
+            - If you previously ran "check_workflows" and found a matching workflow, you MUST execute it using action_type="run_workflow" and provide workflow_id.
+            - Only fallback to manual interactions if no workflow exists or if it's a simple one-step task.
+            - To click: use action_type="click" and selector="[jigar-id='...']" or selector="#..."
+            - To type: use action_type="type", provide selector, and value.
+            - To navigate: use action_type="goto" and provide value (the URL).
             - If the instruction is complete, use action_type="done" and explain in explanation.
             - If impossible, use action_type="error".
             

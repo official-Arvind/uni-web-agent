@@ -182,7 +182,13 @@ async def _background_auto_setup(
     """
     await manager.send_progress(domain, {"type": "log", "message": "🧠 Planning workflows..."})
     try:
-        ideas = await auto_plan_workflows(domain, capabilities, api_key)
+        existing_workflows = file_manager.list_workflows(domain)
+        ideas = await auto_plan_workflows(
+            domain=domain, 
+            capabilities=capabilities, 
+            api_key=api_key,
+            existing_workflows=existing_workflows
+        )
         await manager.send_progress(
             domain,
             {"type": "log", "message": f"📋 Planned {len(ideas)} workflows. Generating configurations..."},

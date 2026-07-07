@@ -111,7 +111,7 @@ async def generate_workflow_config(
     for attempt in range(_MAX_RETRIES):
         try:
             response = await client.aio.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-3.1-pro",
                 contents=prompt,
                 config={
                     "response_mime_type": "application/json",
@@ -149,6 +149,7 @@ async def auto_plan_workflows(
     domain: str,
     capabilities: str,
     api_key: str,
+    existing_workflows: list[WorkflowConfig] | None = None,
 ) -> list[WorkflowIdea]:
     """Use AI to plan a set of workflows for a given domain.
 
@@ -175,9 +176,18 @@ async def auto_plan_workflows(
             f"a user might want to do on {domain} (e.g. login, search, add to cart, check orders, etc)."
         )
 
+    existing_prompt = ""
+    if existing_workflows:
+        existing_names = [wf.workflow_name for wf in existing_workflows]
+        existing_prompt = (
+            f"\nWARNING: The following workflows ALREADY EXIST for this domain: {existing_names}.\n"
+            f"DO NOT generate any workflows that overlap with these existing ones. Only generate NEW workflows."
+        )
+
     prompt = f"""
     You are an AI architect planning out web automation workflows for the domain: {domain}
     {capabilities_prompt}
+    {existing_prompt}
     
     Break this down into distinct, logical workflows. For each workflow, provide:
     1. A clear workflow_name (e.g. "Add to Cart")
@@ -192,7 +202,7 @@ async def auto_plan_workflows(
     for attempt in range(_MAX_RETRIES):
         try:
             response = await client.aio.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-3.1-pro",
                 contents=prompt,
                 config={
                     "response_mime_type": "application/json",
