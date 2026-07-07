@@ -206,7 +206,7 @@ async def _background_auto_setup(
                     domain,
                     {"type": "log", "message": f"✅ Saved workflow: {idea.workflow_name}"},
                 )
-            except (ConnectionError, TimeoutError, ValueError) as exc:
+            except (ConnectionError, TimeoutError, ValueError, RuntimeError) as exc:
                 logger.warning("[ROUTES] Workflow generation failed for %s: %s", idea.workflow_name, exc)
                 await manager.send_progress(
                     domain,
@@ -220,16 +220,16 @@ async def _background_auto_setup(
     except Exception as exc:
         logger.error("[ROUTES] Auto-setup failed for domain=%s: %s", domain, exc)
         await manager.send_progress(domain, {"type": "error", "message": f"Auto-setup failed: {exc}"})
-        raise
 
 
 @router.post("/sites/{domain}/auto-setup")
-async def auto_setup_site(domain: str, req: AutoSetupRequest) -> dict[str, str]:
+async def auto_setup_site(domain: str, req: AutoSetupRequest, background_tasks: BackgroundTasks) -> dict[str, str]:
     """Trigger AI-driven workflow auto-setup for a site.
 
     Args:
         domain: The target site domain.
         req: Contains user capability hints.
+        background_tasks: FastAPI background tasks dependency.
 
     Returns:
         A status confirmation dict.
@@ -241,13 +241,14 @@ async def auto_setup_site(domain: str, req: AutoSetupRequest) -> dict[str, str]:
     if not global_settings.gemini_api_key:
         raise HTTPException(status_code=400, detail="Gemini API Key not configured")
 
-    await _background_auto_setup(
+    background_tasks.add_task(
+        _background_auto_setup,
         domain=domain,
         capabilities=req.capabilities,
         api_key=global_settings.gemini_api_key,
         proxy=global_settings.default_proxy,
     )
-    return {"status": "success", "message": "Auto-setup completed!"}
+    return {"status": "success", "message": "Auto-setup started"}
 
 
 # ---------------------------------------------------------------------------
