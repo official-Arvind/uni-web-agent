@@ -24,7 +24,7 @@ FOR /F "tokens=5" %%T IN ('netstat -ano ^| findstr :8000') DO (
     )
 )
 if "%KILLED_SOMETHING%"=="1" (
-    timeout /T 2 /NOBREAK >nul
+    ping 127.0.0.1 -n 3 >nul
     goto kill_loop
 )
 
@@ -32,9 +32,16 @@ set PYTHONIOENCODING=utf-8
 
 if "%MODE%"=="2" (
     echo Starting localtunnel in the background...
+    echo. > tunnel_url.txt
     start /b cmd /c "npx --yes localtunnel --port 8000 > tunnel_url.txt"
     echo Waiting for URL generation...
-    timeout /T 5 /NOBREAK >nul
+    
+:wait_url
+    for %%I in (tunnel_url.txt) do if %%~zI LEQ 5 (
+        ping 127.0.0.1 -n 2 >nul
+        goto wait_url
+    )
+    
     echo.
     echo ========================================================
     type tunnel_url.txt
