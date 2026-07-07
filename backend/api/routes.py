@@ -325,3 +325,43 @@ async def run_workflow(
         message="Workflow started",
         logs_url=f"/ws/execution/{domain}",
     )
+
+# ---------------------------------------------------------------------------
+# Google Auth / Persistent Profiles
+# ---------------------------------------------------------------------------
+
+async def _background_google_login() -> None:
+    from playwright.async_api import async_playwright
+    import os
+    profile_dir = os.path.abspath("./chrome_profile")
+    os.makedirs(profile_dir, exist_ok=True)
+    
+    async with async_playwright() as p:
+        context = await p.chromium.launch_persistent_context(
+            user_data_dir=profile_dir,
+            headless=False,
+            args=["--disable-blink-features=AutomationControlled"],
+        )
+        if len(context.pages) > 0:
+            page = context.pages[0]
+        else:
+            page = await context.new_page()
+            
+        await page.goto("https://accounts.google.com/")
+        
+        try:
+            # Wait for 5 minutes for the user to login and close the browser
+            await page.wait_for_event("close", timeout=300000)
+        except Exception:
+            pass
+        finally:
+            try:
+                await context.close()
+            except:
+                pass
+
+@router.post("/auth/google")
+async def link_google_account(background_tasks: BackgroundTasks) -> dict[str, str]:
+    """Launch a visible persistent browser for manual Google Auth."""
+    background_tasks.add_task(_background_google_login)
+    return {"status": "success", "message": "Browser launched for Auth"}

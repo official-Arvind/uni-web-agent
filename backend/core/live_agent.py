@@ -64,24 +64,32 @@ class LiveAgentSession:
         self.page: Page | None = None
         self.is_running: bool = False
         self.chat_history: list[str] = []
+        self.session_log_path: str | None = None
 
     async def start(self) -> None:
         """Initialise a visible browser session for live copiloting."""
-        logger.info("[LIVE_AGENT] Starting visible browser session...")
+        logger.info("[LIVE_AGENT] Starting visible browser session with persistent profile...")
         self.playwright = await async_playwright().start()
-        logger.info("[LIVE_AGENT] Launching Chromium (headless=False)...")
-        self.browser = await self.playwright.chromium.launch(
+        
+        profile_dir = os.path.abspath("./chrome_profile")
+        os.makedirs(profile_dir, exist_ok=True)
+        
+        self.context = await self.playwright.chromium.launch_persistent_context(
+            user_data_dir=profile_dir,
             headless=False,
             args=["--disable-blink-features=AutomationControlled"],
-        )
-        self.context = await self.browser.new_context(
             user_agent=(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
                 "Chrome/120.0.0.0 Safari/537.36"
             ),
         )
-        self.page = await self.context.new_page()
+        
+        if len(self.context.pages) > 0:
+            self.page = self.context.pages[0]
+        else:
+            self.page = await self.context.new_page()
+            
         await Stealth().apply_stealth_async(self.page)
         logger.info("[LIVE_AGENT] Playwright page ready with stealth.")
         self.is_running = True
@@ -92,8 +100,7 @@ class LiveAgentSession:
         self.is_running = False
         if self.context:
             await self.context.close()
-        if self.browser:
-            await self.browser.close()
+        # Note: browser object doesn't exist for persistent context
         if self.playwright:
             await self.playwright.stop()
 
@@ -152,8 +159,23 @@ class LiveAgentSession:
         """
         if not self.page:
             await self.start()
+            
+        if not self.session_log_path:
+            import re
+            import datetime
+            safe_name = re.sub(r'[^a-zA-Z0-9]+', '_', instruction)[:50].strip('_')
+            ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            log_dir = os.path.abspath(f"./chrome_profile/logs/{safe_name}_{ts}")
+            os.makedirs(log_dir, exist_ok=True)
+            self.session_log_path = os.path.join(log_dir, "session_log.txt")
 
-        self.chat_history.append(f"User: {instruction}")
+        def _log_event(msg: str) -> None:
+            self.chat_history.append(msg)
+            if self.session_log_path:
+                with open(self.session_log_path, "a", encoding="utf-8") as f:
+                    f.write(msg + "\n")
+
+        _log_event(f"User: {instruction}")
         await ws_callback({"type": "log", "message": f"🤖 Received: '{instruction}'"})
 
         for step in range(self._MAX_STEPS):
@@ -226,11 +248,11 @@ class LiveAgentSession:
                     await ws_callback({"type": "error", "message": action.explanation})
                     break
                 if action.action_type == "ask_user":
-                    self.chat_history.append(f"Agent: {action.value}")
+                    _log_event(f"Agent: {action.value}")
                     await ws_callback({"type": "question", "message": action.value})
                     return  # Yield control back to the user
 
-                self.chat_history.append(f"Agent: Executing {action.action_type} (selector: {action.selector}, value: {action.value})")
+                _log_event(f"Agent: Executing {action.action_type} (selector: {action.selector}, value: {action.value})")
 
                 # Non-terminal actions
                 await self._dispatch_action(action, instruction, state, ws_callback)
@@ -240,12 +262,12 @@ class LiveAgentSession:
 
             except (ConnectionError, TimeoutError) as exc:
                 logger.error("[LIVE_AGENT] Network error during execution: %s", exc)
-                self.chat_history.append(f"System: Action failed with network error: {exc}")
+                _log_event(f"System: Action failed with network error: {exc}")
                 await ws_callback({"type": "log", "message": f"⚠️ Network timeout. Auto-healing..."})
                 continue
             except Exception as exc:
                 logger.error("[LIVE_AGENT] Unexpected execution error: %s", exc)
-                self.chat_history.append(f"System: Action failed with error: {exc}")
+                _log_event(f"System: Action failed with error: {exc}")
                 await ws_callback({"type": "log", "message": f"⚠️ Action failed. Auto-healing..."})
                 continue
 
