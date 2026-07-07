@@ -29,6 +29,9 @@ export default function LiveCopilot() {
             const data = JSON.parse(event.data);
             if (data.type === 'log') {
                 setLogs(prev => [...prev, { type: 'info', text: data.message }]);
+            } else if (data.type === 'question') {
+                setLogs(prev => [...prev, { type: 'question', text: `🤖 AI: ${data.message}` }]);
+                setIsRunning(false);
             } else if (data.type === 'error') {
                 setLogs(prev => [...prev, { type: 'error', text: data.message }]);
                 toast.error(data.message);
@@ -141,6 +144,11 @@ export default function LiveCopilot() {
                             border = '1px solid rgba(0, 150, 255, 0.3)';
                             color = '#66b3ff';
                             icon = '>';
+                        } else if (log.type === 'question') {
+                            bg = 'rgba(255, 204, 0, 0.05)';
+                            border = '1px solid rgba(255, 204, 0, 0.4)';
+                            color = '#ffcc00';
+                            icon = '[?]';
                         } else if (log.type === 'error') {
                             bg = 'rgba(255, 51, 102, 0.05)';
                             border = '1px solid rgba(255, 51, 102, 0.4)';

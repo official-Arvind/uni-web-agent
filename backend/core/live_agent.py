@@ -32,7 +32,7 @@ class LiveAgentAction(BaseModel):
 
     Attributes:
         action_type: One of ``click``, ``type``, ``goto``, ``scroll``,
-            ``check_workflows``, ``run_workflow``, ``done``, ``error``.
+            ``check_workflows``, ``run_workflow``, ``ask_user``, ``done``, ``error``.
         selector: CSS selector for the target element (click/type).
         value: URL, text value, or scroll amount.
         workflow_id: Required when ``action_type`` is ``run_workflow``.
@@ -63,6 +63,7 @@ class LiveAgentSession:
         self.context: BrowserContext | None = None
         self.page: Page | None = None
         self.is_running: bool = False
+        self.chat_history: list[str] = []
 
     async def start(self) -> None:
         """Initialise a visible browser session for live copiloting."""
@@ -152,7 +153,8 @@ class LiveAgentSession:
         if not self.page:
             await self.start()
 
-        await ws_callback({"type": "log", "message": f"🤖 Received instruction: '{instruction}'"})
+        self.chat_history.append(f"User: {instruction}")
+        await ws_callback({"type": "log", "message": f"🤖 Received: '{instruction}'"})
 
         for step in range(self._MAX_STEPS):
             await ws_callback({"type": "log", "message": "📸 Analysing current page state..."})
@@ -165,10 +167,13 @@ class LiveAgentSession:
                 "url": state["url"],
             })
 
-            # Build AI prompt
+            chat_context = "\n".join(self.chat_history[-15:])
+            
             prompt = f"""
-            You are Jigar Universal Web Agent, a live browser co-pilot.
-            The user wants to accomplish this instruction: "{instruction}"
+            You are Jigar Universal Web Agent, an interactive live browser co-pilot.
+            
+            Conversation History:
+            {chat_context}
             
             Current URL: {state["url"]}
             
@@ -176,7 +181,7 @@ class LiveAgentSession:
             DOM:
             {state["dom"]}
             
-            Based on the screenshot and DOM, determine the SINGLE NEXT LOGICAL STEP to progress towards the goal.
+            Based on the screenshot, DOM, and Conversation History, determine the SINGLE NEXT LOGICAL STEP to progress towards the goal.
             
             CRITICAL INSTRUCTIONS:
             - If the user's instruction is complex or a multi-step task, you MUST check if a workflow exists to automate it by using action_type="check_workflows". This saves API calls!
@@ -185,6 +190,7 @@ class LiveAgentSession:
             - To click: use action_type="click" and selector="[jigar-id='...']" or selector="#..."
             - To type: use action_type="type", provide selector, and value.
             - To navigate: use action_type="goto" and provide value (the URL).
+            - To ask the user for information (e.g., password, email, or clarification), use action_type="ask_user" and put the question in value.
             - If the instruction is complete, use action_type="done" and explain in explanation.
             - If impossible, use action_type="error".
             
@@ -211,13 +217,17 @@ class LiveAgentSession:
                     "message": f"🧠 AI Decision: {action.explanation} ({action.action_type})",
                 })
 
-                # Terminal states
+                # Terminal/Interactive states
                 if action.action_type == "done":
                     await ws_callback({"type": "status", "message": "Instruction completed successfully!"})
                     break
                 if action.action_type == "error":
                     await ws_callback({"type": "error", "message": action.explanation})
                     break
+                if action.action_type == "ask_user":
+                    self.chat_history.append(f"Agent: {action.value}")
+                    await ws_callback({"type": "question", "message": action.value})
+                    return  # Yield control back to the user
 
                 # Non-terminal actions
                 await self._dispatch_action(action, instruction, state, ws_callback)
