@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
+import { getBackendUrl, getFetchHeaders } from '../api';
 
 const AutoSetupModal = ({ domain, onClose }) => {
   const [capabilities, setCapabilities] = useState('');
@@ -10,9 +11,9 @@ const AutoSetupModal = ({ domain, onClose }) => {
     const loadingToast = toast.loading('Initializing Auto-Setup with Gemini 3.1 Pro Preview...');
     
     try {
-      const response = await fetch(`http://localhost:8000/api/v1/sites/${domain}/auto-setup`, {
+      const response = await fetch(`${getBackendUrl()}/api/v1/sites/${domain}/auto-setup`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getFetchHeaders(),
         body: JSON.stringify({ capabilities })
       });
       

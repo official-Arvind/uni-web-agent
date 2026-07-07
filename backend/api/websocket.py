@@ -106,6 +106,8 @@ async def live_agent_endpoint(websocket: WebSocket) -> None:
             data: dict = await websocket.receive_json()
             if "instruction" in data:
                 await session.execute_instruction(data["instruction"], ws_callback)
+            elif "remote_action" in data:
+                await session.handle_remote_action(data, ws_callback)
     except WebSocketDisconnect:
         logger.info("[WS] Live-agent client disconnected.")
     except Exception as exc:

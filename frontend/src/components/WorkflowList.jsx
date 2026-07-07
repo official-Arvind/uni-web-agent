@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { getBackendUrl, getFetchHeaders } from '../api';
 
 const WorkflowList = ({ domain }) => {
   const [workflows, setWorkflows] = useState([]);
 
   useEffect(() => {
-    fetch(`http://localhost:8000/api/v1/sites/${domain}/workflows`)
+    fetch(`${getBackendUrl()}/api/v1/sites/${domain}/workflows`, { headers: getFetchHeaders() })
       .then(res => res.json())
       .then(data => setWorkflows(data))
       .catch(err => {
@@ -16,9 +17,9 @@ const WorkflowList = ({ domain }) => {
 
   const handleRun = async (workflowId) => {
     try {
-      await fetch(`http://localhost:8000/api/v1/sites/${domain}/workflows/${workflowId}/run`, {
+      await fetch(`${getBackendUrl()}/api/v1/sites/${domain}/workflows/${workflowId}/run`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getFetchHeaders(),
         body: JSON.stringify({ headless: true, screenshot_on_fail: true })
       });
       toast.success('EXECUTION INITIATED // CHECK LOGS');

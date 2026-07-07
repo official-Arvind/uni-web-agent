@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
+import { getBackendUrl, getFetchHeaders } from '../api';
 
 const AddWorkflowModal = ({ domain, onClose, onAdded }) => {
   const [name, setName] = useState('');
@@ -11,9 +12,9 @@ const AddWorkflowModal = ({ domain, onClose, onAdded }) => {
     if (!name || !startUrl) return;
     setLoading(true);
     try {
-      await fetch(`http://localhost:8000/api/v1/sites/${domain}/workflows`, {
+      await fetch(`${getBackendUrl()}/api/v1/sites/${domain}/workflows`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getFetchHeaders(),
         body: JSON.stringify({
           workflow_name: name,
           workflow_description: description,

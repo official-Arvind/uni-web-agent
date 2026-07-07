@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { getBackendUrl, getFetchHeaders } from '../api';
 
 const SettingsModal = ({ onClose }) => {
   const [apiKey, setApiKey] = useState('');
   const [geminiModel, setGeminiModel] = useState('gemini-1.5-flash');
   const [availableModels, setAvailableModels] = useState([]);
+  const [backendUrl, setBackendUrl] = useState(localStorage.getItem('backend_url') || '');
   const [proxyServer, setProxyServer] = useState('');
   const [proxyUser, setProxyUser] = useState('');
   const [proxyPass, setProxyPass] = useState('');
   
   useEffect(() => {
-    fetch('http://localhost:8000/api/v1/settings')
+    fetch(`${getBackendUrl()}/api/v1/settings`, { headers: getFetchHeaders() })
       .then(res => res.json())
       .then(data => {
         if(data.gemini_api_key) setApiKey(data.gemini_api_key);
@@ -20,7 +22,7 @@ const SettingsModal = ({ onClose }) => {
         if(data.default_proxy_password) setProxyPass(data.default_proxy_password);
       });
       
-    fetch('http://localhost:8000/api/v1/models')
+    fetch(`${getBackendUrl()}/api/v1/models`, { headers: getFetchHeaders() })
       .then(res => res.json())
       .then(data => {
         setAvailableModels(data);
@@ -29,9 +31,15 @@ const SettingsModal = ({ onClose }) => {
 
   const handleSave = async () => {
     try {
-      await fetch('http://localhost:8000/api/v1/settings', {
+      if (backendUrl) {
+        localStorage.setItem('backend_url', backendUrl);
+      } else {
+        localStorage.removeItem('backend_url');
+      }
+
+      await fetch(`${getBackendUrl()}/api/v1/settings`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getFetchHeaders(),
         body: JSON.stringify({
           gemini_api_key: apiKey,
           gemini_model: geminiModel,
@@ -41,6 +49,9 @@ const SettingsModal = ({ onClose }) => {
         })
       });
       toast.success('Settings saved successfully!');
+      if (localStorage.getItem('backend_url') !== backendUrl) {
+         window.location.reload();
+      }
       onClose();
     } catch (err) {
       console.error(err);
@@ -66,6 +77,49 @@ const SettingsModal = ({ onClose }) => {
         
         <div style={{ position: 'relative', marginBottom: '32px' }}>
           <input 
+            type="text" 
+            className="input-field" 
+            style={{
+              background: 'rgba(255, 255, 255, 0.03)',
+              border: '2px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '0',
+              padding: '16px 14px',
+              color: '#fff',
+              outline: 'none',
+              width: '100%',
+              fontSize: '16px',
+              transition: 'all 0.3s ease',
+              boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.5)',
+              fontFamily: '"JetBrains Mono", monospace'
+            }}
+            value={backendUrl} 
+            onChange={(e) => setBackendUrl(e.target.value)} 
+            onFocus={(e) => e.target.style.borderColor = '#00ff64'}
+            onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
+          />
+          <label style={{
+            position: 'absolute',
+            left: '12px',
+            top: backendUrl ? '-12px' : '16px',
+            fontSize: backendUrl ? '12px' : '16px',
+            color: backendUrl ? '#00ff64' : 'rgba(255,255,255,0.5)',
+            background: backendUrl ? '#0a0a0a' : 'transparent',
+            padding: '0 8px',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            pointerEvents: 'none',
+            textTransform: 'uppercase',
+            fontWeight: 'bold',
+            letterSpacing: '1.5px',
+            border: backendUrl ? '1px solid rgba(0, 255, 100, 0.4)' : 'none',
+            borderRadius: '0'
+          }}>Public Backend URL (Optional)</label>
+          <div style={{ fontSize: '0.8rem', marginTop: '8px', color: '#888', fontWeight: 'bold' }}>
+            Leave blank if running locally. If running in Public Mode, paste your localtunnel URL here!
+          </div>
+        </div>
+
+        <div style={{ position: 'relative', marginBottom: '32px' }}>
+          <input 
             type="password" 
             className="input-field" 
             style={{
@@ -75,23 +129,16 @@ const SettingsModal = ({ onClose }) => {
               padding: '16px 14px',
               color: '#fff',
               outline: 'none',
-              transition: 'all 0.3s ease',
-              boxShadow: 'inset 0 0 15px rgba(0,0,0,0.8)',
               width: '100%',
-              boxSizing: 'border-box',
-              fontSize: '16px'
+              fontSize: '16px',
+              transition: 'all 0.3s ease',
+              boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.5)',
+              letterSpacing: '3px'
             }}
             value={apiKey} 
             onChange={(e) => setApiKey(e.target.value)} 
-            placeholder=" " 
-            onFocus={(e) => {
-              e.target.style.borderColor = '#00ff64';
-              e.target.style.boxShadow = 'inset 0 0 15px rgba(0,255,100,0.2), 0 0 10px rgba(0,255,100,0.3)';
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-              e.target.style.boxShadow = 'inset 0 0 15px rgba(0,0,0,0.8)';
-            }}
+            onFocus={(e) => e.target.style.borderColor = '#00ff64'}
+            onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
             id="apiKey"
           />
           <label htmlFor="apiKey" style={{

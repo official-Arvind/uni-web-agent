@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
+import { getWsUrl } from '../api';
 
 export default function LiveCopilot() {
     const [ws, setWs] = useState(null);
@@ -18,7 +19,7 @@ export default function LiveCopilot() {
 
     const connect = () => {
         if (ws) return;
-        const socket = new WebSocket('ws://localhost:8000/ws/live-agent');
+        const socket = new WebSocket(getWsUrl());
         
         socket.onopen = () => {
             setConnected(true);
@@ -76,8 +77,29 @@ export default function LiveCopilot() {
         setInstruction('');
     };
 
+    const handleRemoteClick = (e) => {
+        if (!ws || !connected || isRunning) return;
+        const rect = e.target.getBoundingClientRect();
+        // Since image is objectFit: contain, clicking might be outside actual image if aspect ratio differs.
+        // For simplicity, we just calculate % of the container for now.
+        const x = (e.clientX - rect.left) / rect.width;
+        const y = (e.clientY - rect.top) / rect.height;
+        
+        ws.send(JSON.stringify({ remote_action: 'click', x, y }));
+        toast('Remote Click Sent', { icon: '🖱️', style: { background: '#333', color: '#fff', fontSize: '12px' }});
+    };
+
+    const handleRemoteType = () => {
+        if (!ws || !connected || isRunning) return;
+        const text = prompt("Enter text to type at cursor position:");
+        if (text) {
+            ws.send(JSON.stringify({ remote_action: 'type', text }));
+            toast('Remote Typed: ' + text, { icon: '⌨️', style: { background: '#333', color: '#fff', fontSize: '12px' }});
+        }
+    };
+
     return (
-        <div style={{ display: 'flex', gap: '1.5rem', height: 'calc(100vh - 140px)', padding: '0 2rem 2rem' }}>
+        <div className="LiveCopilot-container" style={{ display: 'flex', gap: '1.5rem', height: 'calc(100vh - 140px)', padding: '0 2rem 2rem' }}>
             {/* Left Panel: Cyber-deck Chat & Controls */}
             <div style={{ 
                 flex: 1, display: 'flex', flexDirection: 'column', 
@@ -283,7 +305,24 @@ export default function LiveCopilot() {
                     
                     {screenshot ? (
                         <div style={{ position: 'relative', width: '100%', height: '100%', border: '1px solid #333', borderRadius: '4px', overflow: 'hidden' }}>
-                            <img src={`data:image/jpeg;base64,${screenshot}`} alt="Live Feed" style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'contrast(1.1) brightness(1.05)' }} />
+                            <img 
+                                src={`data:image/jpeg;base64,${screenshot}`} 
+                                alt="Live Feed" 
+                                onClick={handleRemoteClick}
+                                style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'contrast(1.1) brightness(1.05)', cursor: connected && !isRunning ? 'crosshair' : 'default' }} 
+                            />
+                            
+                            <button 
+                                onClick={handleRemoteType}
+                                disabled={!connected || isRunning}
+                                style={{
+                                    position: 'absolute', bottom: '10px', right: '10px', zIndex: 20,
+                                    background: 'rgba(255, 0, 255, 0.2)', border: '1px solid #ff00ff',
+                                    color: '#ff00ff', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer',
+                                    fontFamily: 'monospace', fontWeight: 'bold'
+                                }}>
+                                [⌨️ REMOTE TYPE]
+                            </button>
                         </div>
                     ) : (
                         <div style={{ color: 'rgba(255,0,255,0.4)', textAlign: 'center', fontFamily: 'monospace' }}>

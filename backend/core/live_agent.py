@@ -105,6 +105,40 @@ class LiveAgentSession:
         if self.playwright:
             await self.playwright.stop()
 
+    async def handle_remote_action(self, data: dict, ws_callback) -> None:
+        """Handle manual VNC remote action from client."""
+        if not self.page:
+            return
+            
+        action = data.get("remote_action")
+        try:
+            if action == "click":
+                x = float(data.get("x", 0))
+                y = float(data.get("y", 0))
+                
+                # Get viewport size
+                viewport = self.page.viewport_size
+                if viewport:
+                    abs_x = x * viewport["width"]
+                    abs_y = y * viewport["height"]
+                    await self.page.mouse.click(abs_x, abs_y)
+                    
+            elif action == "type":
+                text = data.get("text", "")
+                if text:
+                    await self.page.keyboard.type(text)
+            
+            # Send updated screenshot
+            state = await self.get_state()
+            if state["screenshot"]:
+                await ws_callback({
+                    "type": "screenshot",
+                    "data": state["screenshot"],
+                    "url": state["url"],
+                })
+        except Exception as e:
+            logger.error("[LIVE_AGENT] Remote action failed: %s", e)
+
     async def get_state(self) -> dict[str, Any]:
         """Capture a screenshot and simplified DOM for the AI and frontend.
 

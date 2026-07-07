@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import SiteCard from './SiteCard';
 import AddSiteModal from './AddSiteModal';
+import { getBackendUrl, getFetchHeaders } from '../api';
 
 const Dashboard = () => {
   const [sites, setSites] = useState([]);
   const [showAddSite, setShowAddSite] = useState(false);
 
   const fetchSites = () => {
-    fetch('http://localhost:8000/api/v1/sites')
+    fetch(`${getBackendUrl()}/api/v1/sites`, { headers: getFetchHeaders() })
       .then(res => res.json())
       .then(data => setSites(data))
       .catch(err => {

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
+import { getBackendUrl, getFetchHeaders } from '../api';
 
 const AddSiteModal = ({ onClose, onAdded }) => {
   const [domain, setDomain] = useState('');
@@ -7,9 +8,9 @@ const AddSiteModal = ({ onClose, onAdded }) => {
   const handleSave = async () => {
     if (!domain) return;
     try {
-      await fetch('http://localhost:8000/api/v1/sites', {
+      await fetch(`${getBackendUrl()}/api/v1/sites`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getFetchHeaders(),
         body: JSON.stringify({ domain })
       });
       toast.success('Site added successfully!');
