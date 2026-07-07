@@ -8,6 +8,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from backend.core.live_agent import LiveAgentSession
 from backend.utils.file_manager import get_global_settings
+from google import genai
 
 __all__ = ["ws_router", "manager", "ConnectionManager"]
 
