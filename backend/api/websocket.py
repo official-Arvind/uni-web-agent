@@ -107,7 +107,9 @@ async def live_agent_endpoint(websocket: WebSocket) -> None:
     async def continuous_stream():
         while True:
             try:
-                if session.is_running and session.page and not session.page.is_closed():
+                if session.is_running:
+                    if not session.page or session.page.is_closed():
+                        raise RuntimeError("Page is closed")
                     state = await session.get_state()
                     if state.get("screenshot"):
                         success = await ws_callback({
@@ -118,6 +120,18 @@ async def live_agent_endpoint(websocket: WebSocket) -> None:
                         if not success:
                             break
                 await asyncio.sleep(0.2)
+            except RuntimeError as e:
+                if "Browser disconnected" in str(e) or "Page is closed" in str(e):
+                    if session.is_running:
+                        logger.warning("[WS] Browser connection dropped. Auto-restarting...")
+                        await session.stop()
+                        try:
+                            await session.start()
+                        except Exception as start_e:
+                            logger.error(f"[WS] Failed to restart browser: {start_e}")
+                            session.is_running = True
+                            await asyncio.sleep(2)
+                await asyncio.sleep(1)
             except Exception:
                 await asyncio.sleep(1)
 

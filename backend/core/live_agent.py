@@ -138,9 +138,14 @@ class LiveAgentSession:
                 pass
         if hasattr(self, 'chrome_process') and self.chrome_process:
             try:
-                self.chrome_process.terminate()
-            except Exception:
-                pass
+                import os
+                if os.name == 'nt':
+                    import subprocess
+                    subprocess.run(["taskkill", "/F", "/T", "/PID", str(self.chrome_process.pid)], capture_output=True)
+                else:
+                    self.chrome_process.terminate()
+            except Exception as e:
+                logger.error(f"[LIVE_AGENT] Error killing Chrome process: {e}")
         if self.playwright:
             await self.playwright.stop()
 
@@ -188,36 +193,40 @@ class LiveAgentSession:
         if not self.page:
             return {"screenshot": None, "dom": None, "url": None}
 
-        # Take screenshot as base64
-        screenshot_bytes: bytes = await self.page.screenshot(type="jpeg", quality=70)
-        screenshot_b64: str = base64.b64encode(screenshot_bytes).decode("utf-8")
+        try:
+            # Take screenshot as base64
+            screenshot_bytes: bytes = await self.page.screenshot(type="jpeg", quality=70)
+            screenshot_b64: str = base64.b64encode(screenshot_bytes).decode("utf-8")
 
-        # Extract simplified DOM
-        element_map: list[dict] = await self.page.evaluate('''() => {
-            const elements = Array.from(document.querySelectorAll('button, a, input, select, textarea, [role="button"]'));
-            return elements.map((el, index) => {
-                // Assign a temporary jigar-id for precise AI targeting
-                const jigarId = el.getAttribute('jigar-id') || el.id || `jigar-el-${index}`;
-                el.setAttribute('jigar-id', jigarId);
-                
-                return {
-                    tag: el.tagName.toLowerCase(),
-                    jigarId: jigarId,
-                    className: el.className,
-                    text: el.innerText?.trim().substring(0, 50),
-                    ariaLabel: el.getAttribute('aria-label'),
-                    type: el.getAttribute('type'),
-                    name: el.getAttribute('name')
-                };
-            }).filter(el => el.text || el.ariaLabel || el.tag === 'input' || el.tag === 'select');
-        }''')
+            # Extract simplified DOM
+            element_map: list[dict] = await self.page.evaluate('''() => {
+                const elements = Array.from(document.querySelectorAll('button, a, input, select, textarea, [role="button"]'));
+                return elements.map((el, index) => {
+                    // Assign a temporary jigar-id for precise AI targeting
+                    const jigarId = el.getAttribute('jigar-id') || el.id || `jigar-el-${index}`;
+                    el.setAttribute('jigar-id', jigarId);
+                    
+                    return {
+                        tag: el.tagName.toLowerCase(),
+                        jigarId: jigarId,
+                        className: el.className,
+                        text: el.innerText?.trim().substring(0, 50),
+                        ariaLabel: el.getAttribute('aria-label'),
+                        type: el.getAttribute('type'),
+                        name: el.getAttribute('name')
+                    };
+                }).filter(el => el.text || el.ariaLabel || el.tag === 'input' || el.tag === 'select');
+            }''')
 
-        return {
-            "screenshot": screenshot_b64,
-            "dom": json.dumps(element_map, indent=2),
-            "url": self.page.url,
-            "raw_bytes": screenshot_bytes,
-        }
+            return {
+                "screenshot": screenshot_b64,
+                "dom": json.dumps(element_map, indent=2),
+                "url": self.page.url,
+                "raw_bytes": screenshot_bytes,
+            }
+        except Exception as e:
+            logger.error("[LIVE_AGENT] get_state failed (browser may have closed): %s", e)
+            raise RuntimeError(f"Browser disconnected: {e}")
 
     async def execute_instruction(self, instruction: str, ws_callback: Callable) -> None:
         """Process a natural-language instruction and execute it on the browser.
