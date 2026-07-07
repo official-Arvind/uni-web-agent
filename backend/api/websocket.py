@@ -96,11 +96,13 @@ async def live_agent_endpoint(websocket: WebSocket) -> None:
 
     session = LiveAgentSession(api_key=settings.gemini_api_key)
 
-    async def ws_callback(message: dict) -> None:
+    async def ws_callback(message: dict) -> bool:
         try:
             await websocket.send_json(message)
+            return True
         except (ConnectionError, RuntimeError):
             logger.warning("[WS] Failed to send message to live-agent client.")
+            return False
 
     async def continuous_stream():
         while True:
@@ -108,11 +110,13 @@ async def live_agent_endpoint(websocket: WebSocket) -> None:
                 if session.is_running and session.page and not session.page.is_closed():
                     state = await session.get_state()
                     if state.get("screenshot"):
-                        await ws_callback({
+                        success = await ws_callback({
                             "type": "screenshot",
                             "data": state["screenshot"],
                             "url": state["url"],
                         })
+                        if not success:
+                            break
                 await asyncio.sleep(0.2)
             except Exception:
                 await asyncio.sleep(1)
