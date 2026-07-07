@@ -1,0 +1,74 @@
+{
+  "workflow_id": "f765dac9-f16e-478c-a4e1-6a00f83810a6",
+  "workflow_name": "Access External Resource Link",
+  "workflow_description": "The agent should navigate to a specific category page or search results, identify a desired resource, and then click on the external link provided for that resource to visit the third-party website.",
+  "start_url": "https://fmhy.net/",
+  "steps": [
+    {
+      "step_number": 1,
+      "action": "navigate",
+      "description": "Navigate to the FMHY homepage.",
+      "target": null,
+      "value": "https://fmhy.net/",
+      "wait_after_ms": 2000,
+      "screenshot_after": false
+    },
+    {
+      "step_number": 2,
+      "action": "click",
+      "description": "Click on the 'Movies & TV' category link to access relevant resources.",
+      "target": {
+        "element_name": "Movies & TV Category Link",
+        "primary": "a[href*='movies-tv']",
+        "fallbacks": [
+          "//a[contains(text(), 'Movies & TV')]",
+          "//a[@aria-label='Movies & TV category']"
+        ],
+        "fingerprint": {
+          "tag": "a",
+          "id": null,
+          "classes": [],
+          "aria_label": null,
+          "text_content": "Movies & TV",
+          "role": "link",
+          "placeholder": null,
+          "name": null
+        }
+      },
+      "value": null,
+      "wait_after_ms": 3000,
+      "screenshot_after": true
+    },
+    {
+      "step_number": 3,
+      "action": "click",
+      "description": "Click on the first external resource link found on the category page to visit the third-party website.",
+      "target": {
+        "element_name": "First External Resource Link",
+        "primary": "a[href^='http']:not([href*='fmhy.net']):first-of-type",
+        "fallbacks": [
+          "//a[starts-with(@href, 'http') and not(contains(@href, 'fmhy.net'))][1]",
+          "//a[@target='_blank'][1]"
+        ],
+        "fingerprint": {
+          "tag": "a",
+          "id": null,
+          "classes": [],
+          "aria_label": null,
+          "text_content": null,
+          "role": "link",
+          "placeholder": null,
+          "name": null
+        }
+      },
+      "value": null,
+      "wait_after_ms": 5000,
+      "screenshot_after": true
+    }
+  ],
+  "created_at": "2026-07-07T11:28:33.280421",
+  "updated_at": "2026-07-07T11:28:33.280429",
+  "version": 1,
+  "heal_count": 0,
+  "last_successful_run": null
+}

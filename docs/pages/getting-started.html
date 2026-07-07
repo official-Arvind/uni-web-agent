@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Getting Started - Jigar Universal Web Agent</title>
+    <link rel="stylesheet" href="../styles/docs.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">🤖 Jigar Web Agent</div>
+        <div class="links">
+            <a href="../index.html">Home</a>
+            <a href="getting-started.html" class="active">Getting Started</a>
+            <a href="architecture.html">Architecture</a>
+        </div>
+    </nav>
+    <main class="container">
+        <h1>Getting Started</h1>
+        <p>Follow these instructions to run the Jigar Universal Web Agent locally.</p>
+        
+        <div class="feature-card">
+            <h3>1. Start the Backend Engine</h3>
+            <p>Ensure your Python virtual environment is activated, then run the FastAPI server:</p>
+            <pre style="background: #0f172a; padding: 1rem; border-radius: 8px; color: #38bdf8;">
+<code>uvicorn backend.main:app --reload --port 8000</code>
+            </pre>
+        </div>
+
+        <div class="feature-card" style="margin-top: 2rem;">
+            <h3>2. Start the UI Dashboard</h3>
+            <p>Open a new terminal, navigate to the frontend directory, and run the Vite server:</p>
+            <pre style="background: #0f172a; padding: 1rem; border-radius: 8px; color: #38bdf8;">
+<code>cd frontend
+npm run dev</code>
+            </pre>
+        </div>
+
+        <div class="feature-card" style="margin-top: 2rem;">
+            <h3>3. Configure the Agent</h3>
+            <p>Open your browser to <code>http://localhost:5173</code>.</p>
+            <ul>
+                <li>Click <strong>⚙️ Settings</strong> and enter your Gemini API Key.</li>
+                <li>Add a site using <strong>+ Add New Site</strong>.</li>
+                <li>Generate your first AI-mapped workflow.</li>
+            </ul>
+        </div>
+    </main>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture - Jigar Universal Web Agent</title>
+    <link rel="stylesheet" href="../styles/docs.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">🤖 Jigar Web Agent</div>
+        <div class="links">
+            <a href="../index.html">Home</a>
+            <a href="getting-started.html">Getting Started</a>
+            <a href="architecture.html" class="active">Architecture</a>
+        </div>
+    </nav>
+    <main class="container">
+        <h1>Architecture Overview</h1>
+        <p>The Jigar Universal Web Agent implements a Hybrid Cache architecture.</p>
+        
+        <div class="feature-card">
+            <h3>1. The Mapping Phase (AI)</h3>
+            <p>Using Crawl4AI to flatten shadow DOMs and trafilatura to clean the HTML, the page is sent to Gemini 3.5 Flash. Gemini returns a robust, deterministic workflow config in JSON format.</p>
+        </div>
+
+        <div class="feature-card" style="margin-top: 2rem;">
+            <h3>2. The Execution Phase (Zero-Token)</h3>
+            <p>The Python FastAPI backend reads the workflow config and executes it via Playwright and Camoufox. Zero AI calls are made during normal execution, achieving 100% cost reduction per run.</p>
+        </div>
+
+        <div class="feature-card" style="margin-top: 2rem;">
+            <h3>3. The Auto-Healing Phase</h3>
+            <p>If a selector fails, the engine captures a snapshot of the Accessibility Tree and falls back to Gemini 3.5 Flash to identify the new selector. The config is updated, and execution resumes.</p>
+        </div>
+    </main>
+</body>
+</html>

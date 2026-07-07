@@ -1,0 +1,14 @@
+fastapi>=0.139.0
+uvicorn[standard]>=0.34.0
+google-genai>=2.10.0
+playwright>=1.61.0
+playwright-stealth>=1.0.6
+camoufox[geoip]>=0.4.0
+crawl4ai[all]
+pydantic>=2.11.0
+trafilatura>=2.0.0
+markdownify>=0.14.0
+python-dotenv>=1.1.0
+websockets>=15.0
+aiofiles>=24.1.0
+httpx>=0.28.0

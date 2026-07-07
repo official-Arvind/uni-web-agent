@@ -1,0 +1,76 @@
+{
+  "workflow_id": "6f37aa88-38a9-4c34-859d-f53bad267cf0",
+  "workflow_name": "Search for Resources",
+  "workflow_description": "The agent should navigate to the homepage, locate and click the search icon/bar, input a specific query (e.g., \"VLC\", \"Netflix alternatives\", \"free movies\"), and then review the search results.",
+  "start_url": "https://fmhy.net/",
+  "steps": [
+    {
+      "step_number": 1,
+      "action": "navigate",
+      "description": "Navigate to the FMHY homepage.",
+      "target": null,
+      "value": "https://fmhy.net/",
+      "wait_after_ms": 2000,
+      "screenshot_after": false
+    },
+    {
+      "step_number": 2,
+      "action": "click",
+      "description": "Locate and click the search icon or button to activate the search bar.",
+      "target": {
+        "element_name": "Search Icon/Button",
+        "primary": "button[aria-label=\"Search\"]",
+        "fallbacks": [
+          "//button[contains(., \"Search\")]",
+          "//a[contains(@aria-label, \"Search\")]",
+          "//div[contains(@class, \"search-icon\")]"
+        ],
+        "fingerprint": {
+          "tag": "button",
+          "id": null,
+          "classes": [],
+          "aria_label": "Search",
+          "text_content": null,
+          "role": "button",
+          "placeholder": null,
+          "name": null
+        }
+      },
+      "value": null,
+      "wait_after_ms": 1000,
+      "screenshot_after": false
+    },
+    {
+      "step_number": 3,
+      "action": "type",
+      "description": "Input the query 'VLC' into the search field.",
+      "target": {
+        "element_name": "Search Input Field",
+        "primary": "input[type=\"search\"]",
+        "fallbacks": [
+          "input[placeholder*=\"Search\"]",
+          "input#search-input",
+          "[aria-label=\"Search input\"]"
+        ],
+        "fingerprint": {
+          "tag": "input",
+          "id": null,
+          "classes": [],
+          "aria_label": "Search input",
+          "text_content": null,
+          "role": null,
+          "placeholder": "Search...",
+          "name": "q"
+        }
+      },
+      "value": "VLC",
+      "wait_after_ms": 3000,
+      "screenshot_after": true
+    }
+  ],
+  "created_at": "2026-07-07T11:27:50.340385",
+  "updated_at": "2026-07-07T11:27:50.340394",
+  "version": 1,
+  "heal_count": 0,
+  "last_successful_run": null
+}

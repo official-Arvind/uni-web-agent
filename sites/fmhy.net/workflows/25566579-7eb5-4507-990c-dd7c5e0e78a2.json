@@ -1,0 +1,48 @@
+{
+  "workflow_id": "25566579-7eb5-4507-990c-dd7c5e0e78a2",
+  "workflow_name": "Browse Categories",
+  "workflow_description": "The agent should navigate to the homepage, then select a specific category (e.g., \"Movies\", \"Software\", \"Games\") from the main navigation or sidebar, and then browse the listed resources within that category.",
+  "start_url": "https://fmhy.net/",
+  "steps": [
+    {
+      "step_number": 1,
+      "action": "navigate",
+      "description": "Navigate to the FMHY homepage.",
+      "target": null,
+      "value": "https://fmhy.net/",
+      "wait_after_ms": 3000,
+      "screenshot_after": false
+    },
+    {
+      "step_number": 2,
+      "action": "click",
+      "description": "Click on the 'Movies' category link to browse resources within that category.",
+      "target": {
+        "element_name": "Movies Category Link",
+        "primary": "a[href*=\"/movies\"]",
+        "fallbacks": [
+          "//a[contains(text(), 'Movies')]",
+          "//a[@aria-label='Movies']"
+        ],
+        "fingerprint": {
+          "tag": "a",
+          "id": null,
+          "classes": [],
+          "aria_label": null,
+          "text_content": "Movies",
+          "role": "link",
+          "placeholder": null,
+          "name": null
+        }
+      },
+      "value": null,
+      "wait_after_ms": 3000,
+      "screenshot_after": true
+    }
+  ],
+  "created_at": "2026-07-07T11:26:46.750989",
+  "updated_at": "2026-07-07T11:26:46.751006",
+  "version": 1,
+  "heal_count": 0,
+  "last_successful_run": null
+}
