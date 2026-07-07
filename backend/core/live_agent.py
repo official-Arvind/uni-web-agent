@@ -162,6 +162,9 @@ class LiveAgentSession:
                 
                 # Get viewport size
                 viewport = self.page.viewport_size
+                if not viewport:
+                    viewport = await self.page.evaluate("() => ({width: window.innerWidth, height: window.innerHeight})")
+                
                 if viewport:
                     abs_x = x * viewport["width"]
                     abs_y = y * viewport["height"]
