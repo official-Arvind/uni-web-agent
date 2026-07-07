@@ -261,26 +261,34 @@ class LiveAgentSession:
 
         elif action.action_type == "click":
             locator = self.page.locator(action.selector).first
-            await locator.wait_for(state="visible", timeout=5000)
-            # Highlight what we are clicking before clicking
-            await locator.evaluate(
-                "el => { el.style.border = '3px solid red'; el.style.backgroundColor = 'rgba(255,0,0,0.2)'; }"
-            )
-            highlight_state = await self.get_state()
-            await ws_callback({"type": "screenshot", "data": highlight_state["screenshot"], "url": highlight_state["url"]})
-            await asyncio.sleep(0.5)
-            await locator.click()
+            try:
+                await locator.wait_for(state="visible", timeout=5000)
+                # Highlight what we are clicking before clicking
+                await locator.evaluate(
+                    "el => { el.style.border = '3px solid red'; el.style.backgroundColor = 'rgba(255,0,0,0.2)'; }"
+                )
+                highlight_state = await self.get_state()
+                await ws_callback({"type": "screenshot", "data": highlight_state["screenshot"], "url": highlight_state["url"]})
+                await asyncio.sleep(0.5)
+            except Exception as e:
+                logger.warning("[LIVE_AGENT] Element hidden or timeout, skipping highlight: %s", e)
+            
+            await locator.click(force=True)
 
         elif action.action_type == "type":
             locator = self.page.locator(action.selector).first
-            await locator.wait_for(state="visible", timeout=5000)
-            await locator.evaluate(
-                "el => { el.style.border = '3px solid blue'; el.style.backgroundColor = 'rgba(0,0,255,0.2)'; }"
-            )
-            highlight_state = await self.get_state()
-            await ws_callback({"type": "screenshot", "data": highlight_state["screenshot"], "url": highlight_state["url"]})
-            await asyncio.sleep(0.5)
-            await locator.fill(action.value)
+            try:
+                await locator.wait_for(state="visible", timeout=5000)
+                await locator.evaluate(
+                    "el => { el.style.border = '3px solid blue'; el.style.backgroundColor = 'rgba(0,0,255,0.2)'; }"
+                )
+                highlight_state = await self.get_state()
+                await ws_callback({"type": "screenshot", "data": highlight_state["screenshot"], "url": highlight_state["url"]})
+                await asyncio.sleep(0.5)
+            except Exception as e:
+                logger.warning("[LIVE_AGENT] Element hidden or timeout, skipping highlight: %s", e)
+                
+            await locator.fill(action.value, force=True)
 
         elif action.action_type == "scroll":
             await self.page.evaluate(f"window.scrollBy(0, {action.value or '500'})")
