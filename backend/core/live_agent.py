@@ -205,8 +205,8 @@ class LiveAgentSession:
             element_map: list[dict] = await self.page.evaluate('''() => {
                 const elements = Array.from(document.querySelectorAll('button, a, input, select, textarea, [role="button"]'));
                 return elements.map((el, index) => {
-                    // Assign a temporary jigar-id for precise AI targeting
-                    const jigarId = el.getAttribute('jigar-id') || el.id || `jigar-el-${index}`;
+                    // Assign a strictly unique temporary jigar-id for precise AI targeting
+                    const jigarId = el.getAttribute('jigar-id') || `jigar-${index}`;
                     el.setAttribute('jigar-id', jigarId);
                     
                     return {
@@ -402,7 +402,7 @@ class LiveAgentSession:
             except Exception as e:
                 logger.warning("[LIVE_AGENT] Element hidden or timeout, skipping highlight: %s", e)
             
-            await locator.click(force=True)
+            await locator.click(force=True, timeout=5000)
 
         elif action.action_type == "type":
             locator = self.page.locator(action.selector).first
@@ -417,7 +417,7 @@ class LiveAgentSession:
             except Exception as e:
                 logger.warning("[LIVE_AGENT] Element hidden or timeout, skipping highlight: %s", e)
                 
-            await locator.fill(action.value, force=True)
+            await locator.fill(action.value, force=True, timeout=5000)
 
         elif action.action_type == "scroll":
             await self.page.evaluate(f"window.scrollBy(0, {action.value or '500'})")
