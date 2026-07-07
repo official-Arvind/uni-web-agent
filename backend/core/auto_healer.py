@@ -102,10 +102,13 @@ class AutoHealer:
         Return the new resilient selector and updated fingerprint.
         """
 
+        settings = file_manager.get_global_settings()
+        model_name = settings.gemini_model or "gemini-1.5-flash"
+
         try:
             logger.info("[AUTO_HEALER] Calling Gemini for healing...")
-            response = self.client.models.generate_content(
-                model="gemini-3.5-flash",
+            response = await self.client.aio.models.generate_content(
+                model=model_name,
                 contents=[
                     prompt,
                     Image.open(io.BytesIO(screenshot_bytes)),

@@ -59,6 +59,29 @@ async def update_settings(settings: GlobalSettings) -> dict[str, str]:
     file_manager.save_global_settings(settings)
     return {"status": "success"}
 
+@router.get("/models", response_model=list[str])
+async def list_models() -> list[str]:
+    """List available Gemini models.
+    
+    Returns:
+        A list of model names.
+    """
+    settings = file_manager.get_global_settings()
+    if not settings.gemini_api_key:
+        return ["gemini-1.5-flash", "gemini-1.5-pro"]
+        
+    try:
+        from google import genai
+        client = genai.Client(api_key=settings.gemini_api_key)
+        models = []
+        for model in client.models.list():
+            if "generateContent" in model.supported_actions:
+                models.append(model.name.replace('models/', ''))
+        return sorted(list(set(models)))
+    except Exception as exc:
+        logger.error(f"[ROUTES] Failed to fetch models: {exc}")
+        return ["gemini-1.5-flash", "gemini-1.5-pro"]
+
 
 # ---------------------------------------------------------------------------
 # Sites

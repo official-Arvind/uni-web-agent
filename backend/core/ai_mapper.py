@@ -4,12 +4,13 @@ Extracts page content using Crawl4AI, sends it to Gemini 3.5 Flash,
 and returns structured ``WorkflowConfig`` objects.
 """
 
+import os
 import asyncio
 import logging
 import uuid
-
 from google import genai
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from backend.utils import file_manager
 
 from backend.core.dom_extractor import extract_page_content
 from backend.models.ai_schemas import GeneratedWorkflow
@@ -108,10 +109,13 @@ async def generate_workflow_config(
     logger.info("[AI_MAPPER] Calling Gemini for workflow generation on url=%s", url)
 
     generated: GeneratedWorkflow | None = None
+    settings = file_manager.get_global_settings()
+    model_name = settings.gemini_model or "gemini-1.5-flash"
+    
     for attempt in range(_MAX_RETRIES):
         try:
             response = await client.aio.models.generate_content(
-                model="gemini-3.5-flash",
+                model=model_name,
                 contents=prompt,
                 config={
                     "response_mime_type": "application/json",
@@ -199,10 +203,13 @@ async def auto_plan_workflows(
 
     logger.info("[AI_MAPPER] Planning workflows for domain=%s", domain)
 
+    settings = file_manager.get_global_settings()
+    model_name = settings.gemini_model or "gemini-1.5-flash"
+
     for attempt in range(_MAX_RETRIES):
         try:
             response = await client.aio.models.generate_content(
-                model="gemini-3.5-flash",
+                model=model_name,
                 contents=prompt,
                 config={
                     "response_mime_type": "application/json",

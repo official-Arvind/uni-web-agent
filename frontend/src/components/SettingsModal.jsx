@@ -3,6 +3,8 @@ import toast from 'react-hot-toast';
 
 const SettingsModal = ({ onClose }) => {
   const [apiKey, setApiKey] = useState('');
+  const [geminiModel, setGeminiModel] = useState('gemini-1.5-flash');
+  const [availableModels, setAvailableModels] = useState([]);
   const [proxyServer, setProxyServer] = useState('');
   const [proxyUser, setProxyUser] = useState('');
   const [proxyPass, setProxyPass] = useState('');
@@ -12,9 +14,16 @@ const SettingsModal = ({ onClose }) => {
       .then(res => res.json())
       .then(data => {
         if(data.gemini_api_key) setApiKey(data.gemini_api_key);
+        if(data.gemini_model) setGeminiModel(data.gemini_model);
         if(data.default_proxy) setProxyServer(data.default_proxy);
         if(data.default_proxy_username) setProxyUser(data.default_proxy_username);
         if(data.default_proxy_password) setProxyPass(data.default_proxy_password);
+      });
+      
+    fetch('http://localhost:8000/api/v1/models')
+      .then(res => res.json())
+      .then(data => {
+        setAvailableModels(data);
       });
   }, []);
 
@@ -25,6 +34,7 @@ const SettingsModal = ({ onClose }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           gemini_api_key: apiKey,
+          gemini_model: geminiModel,
           default_proxy: proxyServer,
           default_proxy_username: proxyUser,
           default_proxy_password: proxyPass
@@ -104,6 +114,63 @@ const SettingsModal = ({ onClose }) => {
             <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" style={{ color: '#00ff64', textDecoration: 'none', borderBottom: '1px solid #00ff64' }}>
               GET A FREE API KEY FROM GOOGLE AI STUDIO ✨
             </a>
+          </div>
+        </div>
+        
+        <div style={{ position: 'relative', marginBottom: '32px' }}>
+          <select 
+            className="input-field" 
+            style={{
+              background: 'rgba(255, 255, 255, 0.03)',
+              border: '2px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '0',
+              padding: '16px 14px',
+              color: '#fff',
+              outline: 'none',
+              transition: 'all 0.3s ease',
+              boxShadow: 'inset 0 0 15px rgba(0,0,0,0.8)',
+              width: '100%',
+              boxSizing: 'border-box',
+              fontSize: '16px',
+              appearance: 'none',
+              cursor: 'pointer'
+            }}
+            value={geminiModel} 
+            onChange={(e) => setGeminiModel(e.target.value)} 
+            onFocus={(e) => {
+              e.target.style.borderColor = '#00ff64';
+              e.target.style.boxShadow = 'inset 0 0 15px rgba(0,255,100,0.2), 0 0 10px rgba(0,255,100,0.3)';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+              e.target.style.boxShadow = 'inset 0 0 15px rgba(0,0,0,0.8)';
+            }}
+            id="geminiModel"
+          >
+            {availableModels.map(model => (
+                <option key={model} value={model} style={{ background: '#0a0a0a', color: '#fff' }}>
+                    {model}
+                </option>
+            ))}
+          </select>
+          <label htmlFor="geminiModel" style={{
+            position: 'absolute',
+            left: '12px',
+            top: '-12px',
+            fontSize: '12px',
+            color: '#00ff64',
+            background: '#0a0a0a',
+            padding: '0 8px',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            pointerEvents: 'none',
+            textTransform: 'uppercase',
+            fontWeight: 'bold',
+            letterSpacing: '1.5px',
+            border: '1px solid rgba(0, 255, 100, 0.4)',
+            borderRadius: '0'
+          }}>AI Model</label>
+          <div style={{ position: 'absolute', right: '16px', top: '16px', pointerEvents: 'none', color: '#00ff64' }}>
+              ▼
           </div>
         </div>
 

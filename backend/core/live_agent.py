@@ -9,6 +9,7 @@ import base64
 import io
 import json
 import logging
+import os
 import urllib.parse
 from collections.abc import Callable
 from typing import Any
@@ -17,7 +18,7 @@ from google import genai
 from PIL import Image
 from playwright.async_api import Browser, BrowserContext, Page, async_playwright
 from playwright_stealth import Stealth
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from backend.utils import file_manager
 from backend.core.execution_engine import ExecutionEngine
@@ -221,8 +222,11 @@ class LiveAgentSession:
             """
 
             try:
+                settings = file_manager.get_global_settings()
+                model_name = settings.gemini_model or "gemini-1.5-flash"
+                
                 response = await self.client.aio.models.generate_content(
-                    model="gemini-3.1-flash-lite",
+                    model=model_name,
                     contents=[
                         prompt,
                         Image.open(io.BytesIO(state["raw_bytes"])),

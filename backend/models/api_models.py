@@ -4,6 +4,7 @@ from .site_config import SiteSettings, WorkflowConfig, WorkflowStep
 
 class GlobalSettings(BaseModel):
     gemini_api_key: Optional[str] = None
+    gemini_model: Optional[str] = "gemini-1.5-flash"
     default_proxy: Optional[str] = None
     default_proxy_username: Optional[str] = None
     default_proxy_password: Optional[str] = None
