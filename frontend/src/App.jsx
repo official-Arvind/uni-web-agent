@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Toaster } from 'react-hot-toast'
+import { useState, useEffect } from 'react'
+import { Toaster, toast } from 'react-hot-toast'
 import Dashboard from './components/Dashboard'
 import Navbar from './components/Navbar'
 import SettingsModal from './components/SettingsModal'
@@ -8,6 +8,13 @@ import LiveCopilot from './components/LiveCopilot'
 function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
+  
+  useEffect(() => {
+    toast('JIGAR UWA SYS_INIT COMPLETE', {
+      icon: '🚀',
+      style: { border: '1px solid #00ffcc', color: '#00ffcc' }
+    });
+  }, []);
 
   return (
     <div className="App fade-in">

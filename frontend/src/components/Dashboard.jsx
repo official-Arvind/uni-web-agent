@@ -30,7 +30,7 @@ const Dashboard = () => {
     <div style={{ padding: '40px 20px', minHeight: '100vh', background: 'transparent', color: '#fff', fontFamily: '"Inter", sans-serif' }}>
       <header style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '60px', borderBottom: '4px solid #fff', paddingBottom: '20px' }}>
         <div style={{ flex: '1 1 300px' }}>
-          <h1 className="gradient-text" style={{ fontSize: '4rem', fontWeight: 900, margin: 0, textTransform: 'uppercase', letterSpacing: '-2px', lineHeight: 1 }}>
+          <h1 className="gradient-text" style={{ fontSize: '4rem', fontWeight: 900, margin: 0, textTransform: 'uppercase', letterSpacing: '-2px', lineHeight: 1, textShadow: '0 0 30px rgba(118, 75, 162, 0.4), 0 0 60px rgba(118, 75, 162, 0.2)' }}>
             Command<br/>Center
           </h1>
           <p style={{ margin: '16px 0 0 0', color: '#a0a0a0', fontSize: '1.2rem', fontWeight: 500, letterSpacing: '1px' }}>
