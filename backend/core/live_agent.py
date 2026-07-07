@@ -185,9 +185,10 @@ class LiveAgentSession:
             
             CRITICAL INSTRUCTIONS:
             - If the user's instruction is complex or a multi-step task, you MUST check if a workflow exists to automate it by using action_type="check_workflows". This saves API calls!
+            - You can provide a specific domain in `value` for check_workflows (e.g. "amazon.in") if you aren't on the page yet.
             - If you previously ran "check_workflows" and found a matching workflow, you MUST execute it using action_type="run_workflow" and provide workflow_id.
             - Only fallback to manual interactions if no workflow exists or if it's a simple one-step task.
-            - To click: use action_type="click" and selector="[jigar-id='...']" or selector="#..."
+            - To click: use action_type="click" and selector="[jigar-id='...']" (Ensure it is jigar-id with a dash, not jigarId)
             - To type: use action_type="type", provide selector, and value.
             - To navigate: use action_type="goto" and provide value (the URL).
             - To ask the user for information (e.g., password, email, or clarification), use action_type="ask_user" and put the question in value.
@@ -229,6 +230,8 @@ class LiveAgentSession:
                     await ws_callback({"type": "question", "message": action.value})
                     return  # Yield control back to the user
 
+                self.chat_history.append(f"Agent: Executing {action.action_type} (selector: {action.selector}, value: {action.value})")
+
                 # Non-terminal actions
                 await self._dispatch_action(action, instruction, state, ws_callback)
 
@@ -237,12 +240,14 @@ class LiveAgentSession:
 
             except (ConnectionError, TimeoutError) as exc:
                 logger.error("[LIVE_AGENT] Network error during execution: %s", exc)
-                await ws_callback({"type": "error", "message": f"Network error: {exc}"})
-                break
+                self.chat_history.append(f"System: Action failed with network error: {exc}")
+                await ws_callback({"type": "log", "message": f"⚠️ Network timeout. Auto-healing..."})
+                continue
             except Exception as exc:
                 logger.error("[LIVE_AGENT] Unexpected execution error: %s", exc)
-                await ws_callback({"type": "error", "message": f"Execution failed: {exc}"})
-                break
+                self.chat_history.append(f"System: Action failed with error: {exc}")
+                await ws_callback({"type": "log", "message": f"⚠️ Action failed. Auto-healing..."})
+                continue
 
     # ------------------------------------------------------------------
     # Private helpers
@@ -264,7 +269,7 @@ class LiveAgentSession:
             ws_callback: Async callback for progress messages.
         """
         if action.action_type == "check_workflows":
-            await self._handle_check_workflows(instruction, state, ws_callback)
+            await self._handle_check_workflows(action, instruction, state, ws_callback)
 
         elif action.action_type == "run_workflow":
             await self._handle_run_workflow(action, state, ws_callback)
@@ -308,6 +313,7 @@ class LiveAgentSession:
 
     async def _handle_check_workflows(
         self,
+        action: LiveAgentAction,
         instruction: str,
         state: dict[str, Any],
         ws_callback: Callable,
@@ -315,11 +321,15 @@ class LiveAgentSession:
         """Check for existing workflows on the current domain.
 
         Args:
+            action: The AI action (may contain domain in value).
             instruction: The original instruction (context-enriched in-place).
             state: Current page state dict.
             ws_callback: Async callback for progress messages.
         """
-        domain = urllib.parse.urlparse(state["url"]).netloc.replace("www.", "")
+        domain = action.value or urllib.parse.urlparse(state["url"]).netloc.replace("www.", "")
+        if not domain:
+            domain = "unknown"
+            
         wfs = file_manager.list_workflows(domain)
         if wfs:
             wf_list = ", ".join(f"{w.workflow_name} (ID: {w.workflow_id})" for w in wfs)
