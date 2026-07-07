@@ -111,7 +111,7 @@ async def generate_workflow_config(
     for attempt in range(_MAX_RETRIES):
         try:
             response = await client.aio.models.generate_content(
-                model="gemini-3.1-pro",
+                model="gemini-3.5-flash",
                 contents=prompt,
                 config={
                     "response_mime_type": "application/json",
@@ -202,7 +202,7 @@ async def auto_plan_workflows(
     for attempt in range(_MAX_RETRIES):
         try:
             response = await client.aio.models.generate_content(
-                model="gemini-3.1-pro",
+                model="gemini-3.5-flash",
                 contents=prompt,
                 config={
                     "response_mime_type": "application/json",
