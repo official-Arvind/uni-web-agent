@@ -11,6 +11,12 @@ export default function LiveCopilot() {
     const [url, setUrl] = useState('');
     const [isRunning, setIsRunning] = useState(false);
     
+    // Virtual Trackpad State
+    const [cursor, setCursor] = useState({ x: 50, y: 50 });
+    const [isVirtualTrackpad, setIsVirtualTrackpad] = useState(false);
+    const lastTouch = useRef(null);
+    const intentionalDisconnect = useRef(false);
+    
     const logsEndRef = useRef(null);
 
     useEffect(() => {
@@ -51,13 +57,20 @@ export default function LiveCopilot() {
             setConnected(false);
             setWs(null);
             setIsRunning(false);
-            toast.error("Disconnected from Live Agent");
+            if (!intentionalDisconnect.current) {
+                toast.error("Connection lost. Reconnecting in 3s...", { id: 'ws-err' });
+                setTimeout(connect, 3000);
+            } else {
+                toast.success("Disconnected from Live Agent");
+            }
         };
         
         setWs(socket);
+        intentionalDisconnect.current = false;
     };
 
     const disconnect = () => {
+        intentionalDisconnect.current = true;
         if (ws) {
             ws.close();
             setWs(null);
@@ -78,6 +91,7 @@ export default function LiveCopilot() {
     };
 
     const handleRemoteClick = (e) => {
+        if (isVirtualTrackpad) return; // Prevent double clicks if trackpad active
         if (!ws || !connected || isRunning) return;
         const rect = e.target.getBoundingClientRect();
         // Since image is objectFit: contain, clicking might be outside actual image if aspect ratio differs.
@@ -96,6 +110,45 @@ export default function LiveCopilot() {
             ws.send(JSON.stringify({ remote_action: 'type', text }));
             toast('Remote Typed: ' + text, { icon: '⌨️', style: { background: '#333', color: '#fff', fontSize: '12px' }});
         }
+    };
+
+    const handleTouchStart = (e) => {
+        if (!isVirtualTrackpad) return;
+        if (e.target.closest('button')) return; // Ignore button touches
+        lastTouch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    };
+
+    const handleTouchMove = (e) => {
+        if (!isVirtualTrackpad || !lastTouch.current) return;
+        if (e.target.closest('button')) return;
+        e.preventDefault(); // Prevent scrolling
+        
+        const dx = e.touches[0].clientX - lastTouch.current.x;
+        const dy = e.touches[0].clientY - lastTouch.current.y;
+        lastTouch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        
+        const elem = document.getElementById('live-feed-container');
+        if (!elem) return;
+        const rect = elem.getBoundingClientRect();
+        const dxPct = (dx / rect.width) * 100;
+        const dyPct = (dy / rect.height) * 100;
+        
+        setCursor(prev => ({
+            x: Math.max(0, Math.min(100, prev.x + dxPct * 1.5)),
+            y: Math.max(0, Math.min(100, prev.y + dyPct * 1.5))
+        }));
+    };
+
+    const handleTouchEnd = () => {
+        lastTouch.current = null;
+    };
+
+    const handleTrackpadClick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!ws || !connected || isRunning) return;
+        ws.send(JSON.stringify({ remote_action: 'click', x: cursor.x / 100, y: cursor.y / 100 }));
+        toast('Trackpad Click Sent', { icon: '🖱️', style: { background: '#333', color: '#fff', fontSize: '12px' }});
     };
 
     return (
@@ -282,6 +335,17 @@ export default function LiveCopilot() {
                         </h2>
                         <div style={{ display: 'flex', gap: '10px' }}>
                             <button 
+                                onClick={() => setIsVirtualTrackpad(!isVirtualTrackpad)}
+                                style={{
+                                    background: isVirtualTrackpad ? 'rgba(0, 255, 100, 0.2)' : 'rgba(255, 255, 255, 0.1)',
+                                    border: isVirtualTrackpad ? '1px solid #00ff66' : '1px solid #555',
+                                    color: isVirtualTrackpad ? '#00ff66' : '#aaa',
+                                    padding: '4px 12px', borderRadius: '4px', cursor: 'pointer',
+                                    fontFamily: 'monospace', fontWeight: 'bold', fontSize: '12px',
+                                }}>
+                                [🕹️ TRACKPAD: {isVirtualTrackpad ? 'ON' : 'OFF'}]
+                            </button>
+                            <button 
                                 onClick={handleRemoteType}
                                 disabled={!connected || isRunning}
                                 style={{
@@ -331,13 +395,67 @@ export default function LiveCopilot() {
                     }}></div>
                     
                     {screenshot ? (
-                        <div id="live-feed-container" style={{ position: 'relative', width: '100%', height: '100%', border: '1px solid #333', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div 
+                            id="live-feed-container" 
+                            onTouchStart={handleTouchStart}
+                            onTouchMove={handleTouchMove}
+                            onTouchEnd={handleTouchEnd}
+                            style={{ position: 'relative', width: '100%', height: '100%', border: '1px solid #333', borderRadius: '4px', overflow: 'hidden' }}
+                        >
                             <img 
                                 src={`data:image/jpeg;base64,${screenshot}`} 
                                 alt="Live Feed" 
                                 onClick={handleRemoteClick}
-                                style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'contrast(1.1) brightness(1.05)', cursor: connected && !isRunning ? 'crosshair' : 'default', background: '#000' }} 
+                                style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'contrast(1.1) brightness(1.05)', cursor: connected && !isRunning ? 'crosshair' : 'default', background: '#000', pointerEvents: isVirtualTrackpad ? 'none' : 'auto' }} 
                             />
+                            
+                            {isVirtualTrackpad && (
+                                <>
+                                    {/* Virtual Cursor */}
+                                    <div style={{
+                                        position: 'absolute',
+                                        left: `${cursor.x}%`,
+                                        top: `${cursor.y}%`,
+                                        width: '24px', height: '24px',
+                                        marginLeft: '-2px', marginTop: '-2px',
+                                        pointerEvents: 'none',
+                                        zIndex: 50
+                                    }}>
+                                        <svg viewBox="0 0 32 32" fill="none" stroke="#00ffcc" strokeWidth="2" style={{ filter: 'drop-shadow(0 0 5px #00ffcc)' }}>
+                                            <path d="M12 12 L24 24 M12 12 L12 28 L17 23 L22 30 L26 28 L21 21 L28 21 Z" fill="rgba(0,255,204,0.5)" />
+                                        </svg>
+                                    </div>
+                                    
+                                    {/* Action Buttons Overlay */}
+                                    <div style={{
+                                        position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
+                                        display: 'flex', gap: '16px', zIndex: 100
+                                    }}>
+                                        <button 
+                                            onClick={handleTrackpadClick}
+                                            disabled={!connected || isRunning}
+                                            style={{
+                                                padding: '12px 24px', borderRadius: '24px', background: 'rgba(0,255,204,0.2)',
+                                                border: '1px solid #00ffcc', color: '#fff', fontWeight: 'bold',
+                                                backdropFilter: 'blur(10px)', boxShadow: '0 0 15px rgba(0,255,204,0.4)',
+                                                cursor: 'pointer'
+                                            }}>
+                                            🖱️ CLICK HERE
+                                        </button>
+                                        <button 
+                                            onClick={handleRemoteType}
+                                            disabled={!connected || isRunning}
+                                            style={{
+                                                padding: '12px 24px', borderRadius: '24px', background: 'rgba(255,0,255,0.2)',
+                                                border: '1px solid #ff00ff', color: '#fff', fontWeight: 'bold',
+                                                backdropFilter: 'blur(10px)', boxShadow: '0 0 15px rgba(255,0,255,0.4)',
+                                                cursor: 'pointer'
+                                            }}>
+                                            ⌨️ TYPE
+                                        </button>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     ) : (
                         <div style={{ color: 'rgba(255,0,255,0.4)', textAlign: 'center', fontFamily: 'monospace' }}>
