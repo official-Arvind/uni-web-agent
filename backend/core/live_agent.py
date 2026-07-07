@@ -110,7 +110,7 @@ class LiveAgentSession:
         
         await asyncio.sleep(2) # Allow Chrome to spin up
         
-        self.browser = await self.playwright.chromium.connect_over_cdp(f"http://localhost:{port}")
+        self.browser = await self.playwright.chromium.connect_over_cdp(f"http://127.0.0.1:{port}")
         self.context = self.browser.contexts[0]
         
         if len(self.context.pages) > 0:
