@@ -4,6 +4,8 @@ import Dashboard from './components/Dashboard'
 import Navbar from './components/Navbar'
 import SettingsModal from './components/SettingsModal'
 import LiveCopilot from './components/LiveCopilot'
+import GoogleLogin from './components/GoogleLogin'
+import BackgroundEffects from './components/BackgroundEffects'
 
 function App() {
   const [showSettings, setShowSettings] = useState(false);
@@ -18,6 +20,7 @@ function App() {
 
   return (
     <div className="App fade-in">
+      <BackgroundEffects />
       <div className="app-background"></div>
       <Toaster 
         position="bottom-right" 
@@ -34,11 +37,13 @@ function App() {
       />
       <Navbar onOpenSettings={() => setShowSettings(true)} activeTab={activeTab} setActiveTab={setActiveTab} />
       <main style={{ padding: '3rem 2rem', maxWidth: '1400px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
-        {activeTab === 'dashboard' ? <Dashboard /> : <LiveCopilot />}
+        {activeTab === 'dashboard' && <Dashboard />}
+        {activeTab === 'live' && <LiveCopilot />}
+        {activeTab === 'google-login' && <GoogleLogin />}
       </main>
       
       {showSettings && (
-        <SettingsModal onClose={() => setShowSettings(false)} />
+        <SettingsModal onClose={() => setShowSettings(false)} setActiveTab={setActiveTab} />
       )}
     </div>
   )

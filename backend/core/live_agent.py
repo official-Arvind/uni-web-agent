@@ -10,6 +10,8 @@ import io
 import json
 import logging
 import os
+import subprocess
+import socket
 import urllib.parse
 from collections.abc import Callable
 from typing import Any
@@ -69,22 +71,47 @@ class LiveAgentSession:
 
     async def start(self) -> None:
         """Initialise a visible browser session for live copiloting."""
-        logger.info("[LIVE_AGENT] Starting visible browser session with persistent profile...")
+        logger.info("[LIVE_AGENT] Starting visible browser session with native CDP stealth...")
         self.playwright = await async_playwright().start()
         
         profile_dir = os.path.abspath("./chrome_profile")
         os.makedirs(profile_dir, exist_ok=True)
         
-        self.context = await self.playwright.chromium.launch_persistent_context(
-            user_data_dir=profile_dir,
-            headless=False,
-            args=["--disable-blink-features=AutomationControlled"],
-            user_agent=(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/120.0.0.0 Safari/537.36"
-            ),
-        )
+        def get_free_port():
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(("", 0))
+                return s.getsockname()[1]
+
+        def get_chrome_path():
+            paths = [
+                r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+                r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+                r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+                r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+            ]
+            for p in paths:
+                if os.path.exists(p):
+                    return p
+            return None
+
+        chrome_path = get_chrome_path()
+        if not chrome_path:
+            raise RuntimeError("Chrome or Edge not found. Please install Chrome.")
+
+        port = get_free_port()
+        self.chrome_process = subprocess.Popen([
+            chrome_path,
+            f"--remote-debugging-port={port}",
+            f"--user-data-dir={profile_dir}",
+            "--no-first-run",
+            "--no-default-browser-check",
+            "--disable-blink-features=AutomationControlled"
+        ])
+        
+        await asyncio.sleep(2) # Allow Chrome to spin up
+        
+        self.browser = await self.playwright.chromium.connect_over_cdp(f"http://localhost:{port}")
+        self.context = self.browser.contexts[0]
         
         if len(self.context.pages) > 0:
             self.page = self.context.pages[0]
@@ -92,7 +119,7 @@ class LiveAgentSession:
             self.page = await self.context.new_page()
             
         await Stealth().apply_stealth_async(self.page)
-        logger.info("[LIVE_AGENT] Playwright page ready with stealth.")
+        logger.info("[LIVE_AGENT] Native Chrome connected via CDP.")
         self.is_running = True
 
     async def stop(self) -> None:
@@ -100,8 +127,20 @@ class LiveAgentSession:
         logger.info("[LIVE_AGENT] Stopping session...")
         self.is_running = False
         if self.context:
-            await self.context.close()
-        # Note: browser object doesn't exist for persistent context
+            try:
+                await self.context.close()
+            except Exception:
+                pass
+        if self.browser:
+            try:
+                await self.browser.close()
+            except Exception:
+                pass
+        if hasattr(self, 'chrome_process') and self.chrome_process:
+            try:
+                self.chrome_process.terminate()
+            except Exception:
+                pass
         if self.playwright:
             await self.playwright.stop()
 

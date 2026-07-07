@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { getBackendUrl, getFetchHeaders } from '../api';
 
-const SettingsModal = ({ onClose }) => {
+const SettingsModal = ({ onClose, setActiveTab }) => {
   const [apiKey, setApiKey] = useState('');
   const [geminiModel, setGeminiModel] = useState('gemini-1.5-flash');
   const [availableModels, setAvailableModels] = useState([]);
@@ -21,13 +21,27 @@ const SettingsModal = ({ onClose }) => {
         if(data.default_proxy_username) setProxyUser(data.default_proxy_username);
         if(data.default_proxy_password) setProxyPass(data.default_proxy_password);
       });
-      
-    fetch(`${getBackendUrl()}/api/v1/models`, { headers: getFetchHeaders() })
+  }, []);
+
+  useEffect(() => {
+    if (!apiKey) {
+      setAvailableModels(["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp"]);
+      return;
+    }
+    fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`)
       .then(res => res.json())
       .then(data => {
-        setAvailableModels(data);
+        if (data.models) {
+          const models = data.models
+            .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"))
+            .map(m => m.name.replace('models/', ''));
+          setAvailableModels(models);
+        }
+      })
+      .catch(() => {
+        setAvailableModels(["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp"]);
       });
-  }, []);
+  }, [apiKey]);
 
   const handleSave = async () => {
     try {
@@ -396,14 +410,10 @@ const SettingsModal = ({ onClose }) => {
               alignItems: 'center',
               gap: '12px'
             }}
-            onClick={async () => {
-              const tId = toast.loading('Opening secure browser for Auth...');
-              try {
-                await fetch('http://localhost:8000/api/v1/auth/google', { method: 'POST' });
-                toast.success('Browser launched! Please log in and close the window when done.', { id: tId, duration: 8000 });
-              } catch (err) {
-                toast.error('Failed to launch browser', { id: tId });
-              }
+            onClick={() => {
+              toast.success('Navigating to Secure Auth Terminal...');
+              setActiveTab('google-login');
+              onClose();
             }}
             onMouseOver={(e) => { e.currentTarget.style.transform = 'translate(-2px, -2px)'; e.currentTarget.style.boxShadow = '6px 6px 0 rgba(79, 172, 254, 0.6)'; e.currentTarget.style.background = 'rgba(79, 172, 254, 0.1)'; }}
             onMouseOut={(e) => { e.currentTarget.style.transform = 'translate(0, 0)'; e.currentTarget.style.boxShadow = '4px 4px 0 rgba(79, 172, 254, 0.4)'; e.currentTarget.style.background = 'transparent'; }}

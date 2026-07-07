@@ -99,14 +99,12 @@ export default function LiveCopilot() {
     };
 
     return (
-        <div className="LiveCopilot-container" style={{ display: 'flex', gap: '1.5rem', height: 'calc(100vh - 140px)', padding: '0 2rem 2rem' }}>
+        <div className="bento-grid LiveCopilot-container" style={{ display: 'grid', gridTemplateColumns: 'minmax(350px, 1fr) minmax(400px, 1.5fr)', gap: '24px', height: 'calc(100vh - 140px)', padding: '0 2rem 2rem' }}>
             {/* Left Panel: Cyber-deck Chat & Controls */}
-            <div className="live-panel-left" style={{ 
-                flex: 1, display: 'flex', flexDirection: 'column', 
-                background: '#0a0a0c', 
+            <div className="live-panel-left bento-item liquid-glass" style={{ 
+                display: 'flex', flexDirection: 'column', 
                 border: '1px solid rgba(0, 255, 255, 0.15)',
-                borderRadius: '12px',
-                boxShadow: '0 0 30px rgba(0, 255, 255, 0.05), inset 0 0 20px rgba(0,255,255,0.02)',
+                borderRadius: '24px',
                 position: 'relative',
                 overflow: 'hidden'
             }}>
@@ -262,12 +260,10 @@ export default function LiveCopilot() {
             </div>
 
             {/* Right Panel: Holographic Live View */}
-            <div className="live-panel-right" style={{ 
-                flex: 1, display: 'flex', flexDirection: 'column', 
-                background: '#0a0a0c', 
+            <div className="live-panel-right bento-item liquid-glass" style={{ 
+                display: 'flex', flexDirection: 'column', 
                 border: '1px solid rgba(255, 0, 255, 0.15)',
-                borderRadius: '12px',
-                boxShadow: '0 0 30px rgba(255, 0, 255, 0.05), inset 0 0 20px rgba(255,0,255,0.02)',
+                borderRadius: '24px',
                 position: 'relative', overflow: 'hidden'
             }}>
                 <div style={{ 
@@ -276,13 +272,44 @@ export default function LiveCopilot() {
                     background: 'linear-gradient(90deg, rgba(255, 0, 255, 0.05) 0%, transparent 100%)',
                     display: 'flex', flexDirection: 'column', gap: '8px'
                 }}>
-                    <h2 style={{ 
-                        margin: 0, fontSize: '18px', fontWeight: '800', 
-                        color: '#fff', textTransform: 'uppercase', letterSpacing: '2px',
-                        fontFamily: 'monospace', display: 'flex', alignItems: 'center', gap: '10px'
-                    }}>
-                        <span style={{ color: '#ff00ff' }}>■</span> OPTIC_SENSOR_FEED
-                    </h2>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h2 style={{ 
+                            margin: 0, fontSize: '18px', fontWeight: '800', 
+                            color: '#fff', textTransform: 'uppercase', letterSpacing: '2px',
+                            fontFamily: 'monospace', display: 'flex', alignItems: 'center', gap: '10px'
+                        }}>
+                            <span style={{ color: '#ff00ff' }}>■</span> OPTIC_SENSOR_FEED
+                        </h2>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <button 
+                                onClick={handleRemoteType}
+                                disabled={!connected || isRunning}
+                                style={{
+                                    background: 'rgba(255, 0, 255, 0.2)', border: '1px solid #ff00ff',
+                                    color: '#ff00ff', padding: '4px 12px', borderRadius: '4px', cursor: 'pointer',
+                                    fontFamily: 'monospace', fontWeight: 'bold', fontSize: '12px',
+                                    opacity: (!connected || isRunning) ? 0.5 : 1
+                                }}>
+                                [⌨️ REMOTE TYPE]
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    const elem = document.getElementById('live-feed-container');
+                                    if (elem && elem.requestFullscreen) {
+                                        elem.requestFullscreen();
+                                    }
+                                }}
+                                disabled={!screenshot}
+                                style={{
+                                    background: 'rgba(0, 255, 255, 0.2)', border: '1px solid #00ffff',
+                                    color: '#00ffff', padding: '4px 12px', borderRadius: '4px', cursor: 'pointer',
+                                    fontFamily: 'monospace', fontWeight: 'bold', fontSize: '12px',
+                                    opacity: !screenshot ? 0.5 : 1
+                                }}>
+                                [⛶ FULL SCREEN]
+                            </button>
+                        </div>
+                    </div>
                     <div style={{ 
                         fontFamily: 'monospace', fontSize: '12px', color: '#ff00ff', opacity: 0.8,
                         background: 'rgba(255,0,255,0.1)', padding: '4px 8px', borderRadius: '4px',
@@ -304,25 +331,13 @@ export default function LiveCopilot() {
                     }}></div>
                     
                     {screenshot ? (
-                        <div style={{ position: 'relative', width: '100%', height: '100%', border: '1px solid #333', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div id="live-feed-container" style={{ position: 'relative', width: '100%', height: '100%', border: '1px solid #333', borderRadius: '4px', overflow: 'hidden' }}>
                             <img 
                                 src={`data:image/jpeg;base64,${screenshot}`} 
                                 alt="Live Feed" 
                                 onClick={handleRemoteClick}
-                                style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'contrast(1.1) brightness(1.05)', cursor: connected && !isRunning ? 'crosshair' : 'default' }} 
+                                style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'contrast(1.1) brightness(1.05)', cursor: connected && !isRunning ? 'crosshair' : 'default', background: '#000' }} 
                             />
-                            
-                            <button 
-                                onClick={handleRemoteType}
-                                disabled={!connected || isRunning}
-                                style={{
-                                    position: 'absolute', bottom: '10px', right: '10px', zIndex: 20,
-                                    background: 'rgba(255, 0, 255, 0.2)', border: '1px solid #ff00ff',
-                                    color: '#ff00ff', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer',
-                                    fontFamily: 'monospace', fontWeight: 'bold'
-                                }}>
-                                [⌨️ REMOTE TYPE]
-                            </button>
                         </div>
                     ) : (
                         <div style={{ color: 'rgba(255,0,255,0.4)', textAlign: 'center', fontFamily: 'monospace' }}>

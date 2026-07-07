@@ -1,5 +1,6 @@
 """WebSocket endpoints for real-time execution progress and live agent sessions."""
 
+import asyncio
 import logging
 import traceback
 
@@ -101,6 +102,23 @@ async def live_agent_endpoint(websocket: WebSocket) -> None:
         except (ConnectionError, RuntimeError):
             logger.warning("[WS] Failed to send message to live-agent client.")
 
+    async def continuous_stream():
+        while True:
+            try:
+                if session.is_running and session.page and not session.page.is_closed():
+                    state = await session.get_state()
+                    if state.get("screenshot"):
+                        await ws_callback({
+                            "type": "screenshot",
+                            "data": state["screenshot"],
+                            "url": state["url"],
+                        })
+                await asyncio.sleep(0.2)
+            except Exception:
+                await asyncio.sleep(1)
+
+    stream_task = asyncio.create_task(continuous_stream())
+
     try:
         while True:
             data: dict = await websocket.receive_json()
@@ -108,10 +126,23 @@ async def live_agent_endpoint(websocket: WebSocket) -> None:
                 await session.execute_instruction(data["instruction"], ws_callback)
             elif "remote_action" in data:
                 await session.handle_remote_action(data, ws_callback)
+            elif data.get("action") == "start_auth":
+                if not session.page:
+                    await session.start()
+                await session.page.goto("https://accounts.google.com/")
+                state = await session.get_state()
+                if state["screenshot"]:
+                    await ws_callback({
+                        "type": "screenshot",
+                        "data": state["screenshot"],
+                        "url": state["url"],
+                    })
     except WebSocketDisconnect:
         logger.info("[WS] Live-agent client disconnected.")
     except Exception as exc:
         logger.error("[WS] Unexpected error in live-agent session: %s", exc)
         traceback.print_exc()
     finally:
+        if stream_task:
+            stream_task.cancel()
         await session.stop()

@@ -48,14 +48,16 @@ const Dashboard = () => {
         </button>
       </header>
 
-      <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '40px', alignItems: 'start' }}>
+      <div className="bento-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gridAutoRows: 'minmax(250px, auto)', gap: '24px', gridAutoFlow: 'dense' }}>
         {sites.length === 0 ? (
-          <div className="glass-card" style={{ gridColumn: '1 / -1', minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed #333', background: 'rgba(255,255,255,0.02)' }}>
-            <h2 style={{ color: '#666', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '2px' }}>Awaiting Targets...</h2>
+          <div className="liquid-glass bento-item" style={{ gridColumn: '1 / -1', minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', padding: '40px' }}>
+            <h2 style={{ color: '#aaa', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '2px' }}>Awaiting Targets...</h2>
           </div>
         ) : (
-          sites.map(site => (
-            <SiteCard key={site.domain} site={site} />
+          sites.map((site, index) => (
+            <div key={site.domain} className="bento-item liquid-glass" style={{ gridColumn: index % 3 === 0 ? 'span 2' : 'span 1', gridRow: index % 4 === 0 ? 'span 2' : 'span 1', borderRadius: '24px', padding: '24px', display: 'flex', flexDirection: 'column', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <SiteCard site={site} />
+            </div>
           ))
         )}
       </div>
