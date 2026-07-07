@@ -71,55 +71,45 @@ class LiveAgentSession:
 
     async def start(self) -> None:
         """Initialise a visible browser session for live copiloting."""
-        logger.info("[LIVE_AGENT] Starting visible browser session with native CDP stealth...")
+        logger.info("[LIVE_AGENT] Starting visible browser session...")
         self.playwright = await async_playwright().start()
         
         profile_dir = os.path.abspath("./chrome_profile")
         os.makedirs(profile_dir, exist_ok=True)
         
-        def get_free_port():
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind(("", 0))
-                return s.getsockname()[1]
-
-        def get_chrome_path():
-            paths = [
-                r"C:\Program Files\Google\Chrome\Application\chrome.exe",
-                r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
-                r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
-                r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
-            ]
-            for p in paths:
-                if os.path.exists(p):
-                    return p
-            return None
-
-        chrome_path = get_chrome_path()
-        if not chrome_path:
-            raise RuntimeError("Chrome or Edge not found. Please install Chrome.")
-
-        port = get_free_port()
-        self.chrome_process = subprocess.Popen([
-            chrome_path,
-            f"--remote-debugging-port={port}",
-            f"--user-data-dir={profile_dir}",
-            "--no-first-run",
-            "--no-default-browser-check",
-            "--disable-blink-features=AutomationControlled"
-        ])
-        
-        await asyncio.sleep(2) # Allow Chrome to spin up
-        
-        self.browser = await self.playwright.chromium.connect_over_cdp(f"http://127.0.0.1:{port}")
-        self.context = self.browser.contexts[0]
-        
+        try:
+            self.context = await self.playwright.chromium.launch_persistent_context(
+                user_data_dir=profile_dir,
+                channel="chrome",
+                headless=False,
+                args=[
+                    "--no-first-run",
+                    "--no-default-browser-check",
+                    "--disable-blink-features=AutomationControlled"
+                ],
+                ignore_default_args=["--enable-automation"]
+            )
+        except Exception as e:
+            logger.warning("[LIVE_AGENT] Chrome launch failed (maybe not installed? Trying Edge): %s", e)
+            self.context = await self.playwright.chromium.launch_persistent_context(
+                user_data_dir=profile_dir,
+                channel="msedge",
+                headless=False,
+                args=[
+                    "--no-first-run",
+                    "--no-default-browser-check",
+                    "--disable-blink-features=AutomationControlled"
+                ],
+                ignore_default_args=["--enable-automation"]
+            )
+            
         if len(self.context.pages) > 0:
             self.page = self.context.pages[0]
         else:
             self.page = await self.context.new_page()
             
         await Stealth().apply_stealth_async(self.page)
-        logger.info("[LIVE_AGENT] Native Chrome connected via CDP.")
+        logger.info("[LIVE_AGENT] Native browser launched via persistent context.")
         self.is_running = True
 
     async def stop(self) -> None:
@@ -131,21 +121,6 @@ class LiveAgentSession:
                 await self.context.close()
             except Exception:
                 pass
-        if self.browser:
-            try:
-                await self.browser.close()
-            except Exception:
-                pass
-        if hasattr(self, 'chrome_process') and self.chrome_process:
-            try:
-                import os
-                if os.name == 'nt':
-                    import subprocess
-                    subprocess.run(["taskkill", "/F", "/T", "/PID", str(self.chrome_process.pid)], capture_output=True)
-                else:
-                    self.chrome_process.terminate()
-            except Exception as e:
-                logger.error(f"[LIVE_AGENT] Error killing Chrome process: {e}")
         if self.playwright:
             await self.playwright.stop()
 
