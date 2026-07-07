@@ -77,16 +77,13 @@ async def websocket_endpoint(websocket: WebSocket, domain: str) -> None:
         manager.disconnect(domain)
 
 
+_global_session = None
+
 @ws_router.websocket("/ws/live-agent")
 async def live_agent_endpoint(websocket: WebSocket) -> None:
-    """WebSocket endpoint for interactive live-agent copilot sessions.
-
-    The client sends JSON messages with an ``instruction`` key; each
-    instruction is executed sequentially against the live browser session.
-
-    Args:
-        websocket: The WebSocket connection.
-    """
+    """WebSocket endpoint for interactive live-agent copilot sessions."""
+    global _global_session
+    
     await websocket.accept()
     settings = get_global_settings()
     if not settings.gemini_api_key:
@@ -94,14 +91,21 @@ async def live_agent_endpoint(websocket: WebSocket) -> None:
         await websocket.close()
         return
 
-    session = LiveAgentSession(api_key=settings.gemini_api_key)
+    if _global_session is None:
+        _global_session = LiveAgentSession(api_key=settings.gemini_api_key)
+    else:
+        # Update API key if it changed
+        _global_session.api_key = settings.gemini_api_key
+        _global_session.client = genai.Client(api_key=settings.gemini_api_key)
+
+    session = _global_session
 
     async def ws_callback(message: dict) -> bool:
         try:
             await websocket.send_json(message)
             return True
         except (ConnectionError, RuntimeError):
-            logger.warning("[WS] Failed to send message to live-agent client.")
+            # Don't log spam, just return False
             return False
 
     async def continuous_stream():
@@ -141,6 +145,7 @@ async def live_agent_endpoint(websocket: WebSocket) -> None:
         while True:
             data: dict = await websocket.receive_json()
             if "instruction" in data:
+                # We can't cancel the instruction easily if the socket drops, but it will keep running in the background.
                 await session.execute_instruction(data["instruction"], ws_callback)
             elif "remote_action" in data:
                 await session.handle_remote_action(data, ws_callback)
@@ -163,4 +168,5 @@ async def live_agent_endpoint(websocket: WebSocket) -> None:
     finally:
         if stream_task:
             stream_task.cancel()
-        await session.stop()
+        # Do NOT stop the session here, so it persists for reconnections!
+        # The browser will stay open.
