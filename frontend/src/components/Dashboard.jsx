@@ -28,8 +28,8 @@ const Dashboard = () => {
   };
 
   return (
-    <div style={{ padding: '40px 20px', minHeight: '100vh', background: 'transparent', color: '#fff', fontFamily: '"Inter", sans-serif' }}>
-      <header style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '60px', borderBottom: '4px solid #fff', paddingBottom: '20px' }}>
+    <div className="dashboard-container" style={{ padding: '40px 20px', minHeight: '100vh', background: 'transparent', color: '#fff', fontFamily: '"Inter", sans-serif' }}>
+      <header className="dashboard-header" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '60px', borderBottom: '4px solid #fff', paddingBottom: '20px' }}>
         <div style={{ flex: '1 1 300px' }}>
           <h1 className="gradient-text" style={{ fontSize: '4rem', fontWeight: 900, margin: 0, textTransform: 'uppercase', letterSpacing: '-2px', lineHeight: 1, textShadow: '0 0 30px rgba(118, 75, 162, 0.4), 0 0 60px rgba(118, 75, 162, 0.2)' }}>
             Command<br/>Center
@@ -48,7 +48,7 @@ const Dashboard = () => {
         </button>
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '40px', alignItems: 'start' }}>
+      <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '40px', alignItems: 'start' }}>
         {sites.length === 0 ? (
           <div className="glass-card" style={{ gridColumn: '1 / -1', minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed #333', background: 'rgba(255,255,255,0.02)' }}>
             <h2 style={{ color: '#666', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '2px' }}>Awaiting Targets...</h2>

@@ -2,8 +2,8 @@ import React from 'react';
 
 const Navbar = ({ onOpenSettings, activeTab, setActiveTab }) => {
     return (
-        <div style={{ display: 'flex', justifyContent: 'center', width: '100%', position: 'sticky', top: '1.5rem', zIndex: 100, marginBottom: '2.5rem' }}>
-            <nav className="flex-between" style={{ 
+        <div className="navbar-wrapper" style={{ display: 'flex', justifyContent: 'center', width: '100%', position: 'sticky', top: '1.5rem', zIndex: 100, marginBottom: '2.5rem' }}>
+            <nav className="flex-between navbar" style={{ 
                 background: 'rgba(10, 10, 15, 0.7)', 
                 backdropFilter: 'blur(20px)', 
                 WebkitBackdropFilter: 'blur(20px)',
@@ -24,7 +24,7 @@ const Navbar = ({ onOpenSettings, activeTab, setActiveTab }) => {
                         Jigar <span style={{ color: '#4facfe' }}>UWA</span>
                     </h2>
                 </div>
-                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', paddingRight: '8px' }}>
+                <div className="navbar-buttons" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', paddingRight: '8px' }}>
                     <button 
                         style={{
                             padding: '8px 20px',

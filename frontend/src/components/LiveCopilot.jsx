@@ -101,7 +101,7 @@ export default function LiveCopilot() {
     return (
         <div className="LiveCopilot-container" style={{ display: 'flex', gap: '1.5rem', height: 'calc(100vh - 140px)', padding: '0 2rem 2rem' }}>
             {/* Left Panel: Cyber-deck Chat & Controls */}
-            <div style={{ 
+            <div className="live-panel-left" style={{ 
                 flex: 1, display: 'flex', flexDirection: 'column', 
                 background: '#0a0a0c', 
                 border: '1px solid rgba(0, 255, 255, 0.15)',
@@ -262,7 +262,7 @@ export default function LiveCopilot() {
             </div>
 
             {/* Right Panel: Holographic Live View */}
-            <div style={{ 
+            <div className="live-panel-right" style={{ 
                 flex: 1, display: 'flex', flexDirection: 'column', 
                 background: '#0a0a0c', 
                 border: '1px solid rgba(255, 0, 255, 0.15)',
